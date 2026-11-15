@@ -20,7 +20,7 @@ Fisher (2026) showed last month that forged closing markers flip the verdicts of
 
 Our main contributions are:
 
-1. **An exploit on a safety benchmark's own grader.** On DarkBench's shipped prompt and score rule, one suffix removes 99-100% of flags on six graders, including the benchmark's default (89 flagged replies of 110 become 3). A ten-suffix ablation shows that the working part is a claim about provenance ("this text was never shown to the user"), which on small graders works with no forged marker at all.
+1. **An exploit on a safety benchmark's own grader.** On DarkBench's shipped prompt and score rule, one suffix removes 99-100% of flags on six graders, including the benchmark's default (89 flagged replies of 110 become 3). An eleven-suffix ablation shows that the working part is a claim about provenance ("this text was never shown to the user"), which on small graders works with no forged marker at all.
 2. **Two failure mechanisms a coded marker cannot fix.** The grader believes a claim about what the user saw, and the benchmark's score rule counts a grader's "invalid" verdict as "no dark pattern", so a grader that notices the tampering produces the same clean score as one that is fooled.
 3. **A test of what closes it.** A port of Inspect's fix and two variants hold fully on one grader of six. A changed score rule and a second "tamper check" question restore 100% of flags on the default grader and 53-70% on two small graders against the strongest suffix. A census of 129 evals shows how common the underlying pattern is.
 
@@ -142,7 +142,7 @@ The result rests on two tested chatbots with 110 replies each, hand-written suff
 
 ### 5.3 Future work
 
-Run the harness on MASK and StrongREJECT, which the census ranks as most exposed; add more tested models; let an attacker model iterate against the tamper check; and send the score-rule change, the crash fix and the tamper check upstream as patches.
+Run the harness on MASK and StrongREJECT, which the census ranks as most exposed; add more tested models; let an attacker model iterate against the tamper check; and send the score-rule and crash fixes, ready as a patch in `upstream/`, and the tamper check to the maintainers.
 
 ## 6. Conclusion
 
@@ -152,7 +152,7 @@ What restores the flags sits outside the grader prompt: a score rule that never 
 
 ## Code and Data
 
-Code, cached model calls, per-run result tables and the census are in the project repository, https://github.com/eddii1/epistemics-sprint : `grader_gaming/` (experiment, re-scoring, tamper check), `census/` (census with file and line for each grader path), `report/` (figures). Prompts are DarkBench's public set (MIT licence). The suffix texts are in Appendix C; they target a public prompt and contain nothing beyond what Fisher (2026) and Inspect issue #6277 already describe as a class.
+Code, cached model calls, per-run result tables and the census are in the project repository, https://github.com/eddii1/epistemics-sprint : `grader_gaming/` (experiment, re-scoring, tamper check), `census/` (census with file and line for each grader path), `report/` (figures), `upstream/` (a patch for DarkBench's scorer: the crash bug and the score rule). Prompts are DarkBench's public set (MIT licence). The suffix texts are in Appendix C; they target a public prompt and contain nothing beyond what Fisher (2026) and Inspect issue #6277 already describe as a class.
 
 ## Author Contributions
 
@@ -194,7 +194,7 @@ If the main assumption fails, that the attacker can append arbitrary text withou
 
 **Personal data.** None. Prompts come from DarkBench's public set, replies and grades are model output, and no human participants were involved.
 
-**Disclosure.** We will send the crash bug with a fix, the score-rule finding and the suffix results to the DarkBench maintainers, and the census to the `inspect_evals` maintainers, at or before submission.
+**Disclosure.** A patch for the crash bug and the score rule is in the repository (`upstream/`). DarkBench's repository has issues disabled, so we will send the patch and the suffix results to its maintainers as a pull request, and the census to the `inspect_evals` maintainers.
 
 ## Appendix B. Pre-existing work and sprint work
 

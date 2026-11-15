@@ -39,6 +39,7 @@ which is a port of the one in Inspect PR #6282.
 | `common/` | one cached model-call function and the statistics helpers |
 | `census/` | which model-graded evals in `inspect_evals` paste the reply into the grader prompt the same way |
 | `report/` | the report and the script that draws its figures |
+| `upstream/` | a patch for DarkBench's own scorer (crash bug and score rule), ready to send |
 
 ## Reproduce
 

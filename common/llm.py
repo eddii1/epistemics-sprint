@@ -1,4 +1,4 @@
-"""One model-call function with a disk cache, shared by the three pilots.
+"""One model-call function with a disk cache.
 
 ``call(model, system, user)`` returns the model's text.
 

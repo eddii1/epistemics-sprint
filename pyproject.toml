@@ -1,7 +1,7 @@
 [project]
 name = "epistemics-sprint"
 version = "0.1.0"
-description = "Apart AI x Epistemics sprint (2026-11-13 to 15): three pilots on graders as the attack surface"
+description = "Apart AI x Epistemics sprint (2026-11-13 to 15): can a chatbot's reply talk an LLM grader into a clean score?"
 requires-python = ">=3.11"
 dependencies = ["litellm>=1.50", "python-dotenv>=1.0"]
 
