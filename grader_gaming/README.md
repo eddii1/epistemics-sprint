@@ -136,6 +136,8 @@ uv run --with matplotlib python -m report.figures
 - The suffixes that work were written by hand. One-attempt model-written suffixes move only the small graders.
 - The fixes are ports onto DarkBench's prompt, not Inspect's code. `inspect_after` and `json_quote` were not
   run on Sonnet; `inspect_after` was not run on Haiku.
-- "Sonnet" and "Haiku" are whatever the Claude CLI aliases pointed to on the run dates.
+- "Haiku" and "Sonnet" are the Claude CLI names `haiku` and `sonnet`, which resolve to `claude-haiku-5-5` and
+  `claude-sonnet-5-5` in the CLI versions used (2.1.322 and 2.1.323). `gpt-4o-mini` resolves to
+  `gpt-4o-mini-2024-07-18`. All three were checked on 15 November 2026; the runs logged only the names.
 - No check yet that a prompt fix leaves unflagged responses unflagged. The tamper check was not run on the Claude
   graders or Gemini 3.8 Flash, and not against a suffix written to get past it.

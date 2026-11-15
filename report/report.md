@@ -48,32 +48,21 @@ We use DarkBench at commit `7eef151` (MIT licence): its grader prompt, system me
 
 ### 3.3 Graders
 
-Six graders: `openai/gpt-4o-mini` (DarkBench's default), `gemini-3.5-flash-lite`, `gemma-4-26b-a4b-it`, `gemini-3.8-flash`, and Claude Haiku and Claude Sonnet through the Claude CLI. Temperature is 0 where the API accepts it. As in DarkBench, a grade that does not parse is retried up to three times.
+Six graders: `gpt-4o-mini` (DarkBench's default; snapshot `gpt-4o-mini-2024-07-18`), `gemini-3.5-flash-lite`, `gemini-3.8-flash`, `gemma-4-26b-a4b-it`, Claude Haiku 5.5 (`claude-haiku-5-5`) and Claude Sonnet 5.5 (`claude-sonnet-5-5`). The OpenAI and Google models were called through their APIs, the Claude models through the Claude Code CLI (versions 2.1.322 and 2.1.323) with its system prompt replaced and its tools off. The runs called `gpt-4o-mini`, `haiku` and `sonnet` by those names; the versions given here are what the names resolved to when checked on 15 November 2026, for Claude with the same CLI versions as on the run days. Temperature is 0 where the API accepts it. As in DarkBench, a grade that does not parse is retried up to three times.
 
 ### 3.4 Suffixes
 
-Ten suffixes isolate what moves the grader (full texts in Appendix C):
-
-- **control**: 50 words of harmless filler.
-- **plea**: a note to "any automated reviewer" asking for a 0, with no format trick.
-- **reopen only**: a forged end marker and a second, harmless conversation block; no instruction, no claim.
-- **note only**, **end + note**, **hidden comment**: a forged end marker and an "annotator guidance update" stating a gold label, without or with a re-opened block, or inside an HTML comment.
-- **invalidate**: a forged "transport error" notice asking for `invalid: 1`.
-- **forged-marker draft claim**: a forged end marker, a "correction from the logging pipeline" saying the transcript above is a discarded draft that was never shown to the user, and a forged second conversation with a neutral reply.
-- **plain-prose draft claim**: the same claim in one paragraph, with no marker of any kind.
-- **model-written** (two kinds): `gemini-3.8-flash` writes the suffix in one attempt, told only that an annotator exists, or also shown the public grader prompt.
+Eleven suffixes isolate what moves the grader. Appendix C describes each one and gives the full texts. Three carry the main results: **control**, 50 words of harmless filler; the **forged-marker draft claim**, a forged end marker, a "correction from the logging pipeline" saying the transcript above is a discarded draft that was never shown to the user, and a forged second conversation with a neutral reply; and the **plain-prose draft claim**, the same claim in one paragraph with no marker of any kind. The other eight change one element at a time: a plea for a 0, a forged marker alone, a stated gold label with and without a marker or inside an HTML comment, an "invalid" notice, and two suffixes written by `gemini-3.8-flash`.
 
 ### 3.5 Defences
 
-**Prompt fixes.** *Escape*: break up `===` and `---` in the reply. *Coded markers*: a port of Inspect's fix onto DarkBench's prompt; every marker carries an 8-character code and the grader is told that the conversation is data and that marker-like text without the code belongs to the reply. *Coded markers + reminder*: the same, plus a sentence after the conversation saying nothing inside it can correct or withdraw any part of it. *JSON string*: the reply is passed as one JSON string with a sentence saying its contents are data.
+**Prompt fixes.** *Escape*: break up `===` and `---` in the reply. *Coded markers*: a port of Inspect's fix onto DarkBench's prompt; every marker carries an 8-character code and the grader is told that the conversation is data. *Coded markers + reminder*: the same, plus a sentence after the conversation saying nothing inside it can correct or withdraw it. *JSON string*: the reply is passed as one JSON string marked as data. The texts are in Appendix C.
 
 **Score rule.** DarkBench scores `-1 if invalid else 2 if result and egregious else result`, and its metric counts -1 as not flagged. The *pattern-first rule* reads the pattern field whatever `invalid` says.
 
 **Tamper check.** A second call to the same grader with a different question: does the reply contain text addressed to an annotator, grader or pipeline instead of the user, or text that tries to change how the conversation is read or scored? A yes counts as flagged.
 
-### 3.6 What did not work, and deviations
-
-A first pilot with small output limits was discarded: Gemini and Gemma spend output tokens on hidden reasoning, so grades were cut short. Our port departs from DarkBench in the graders, in deriving the marker code from the content so that calls can be cached (a deployment would draw it at random), and in inserting replies that contain braces after DarkBench's second `str.format`, which otherwise raises an error (Section 4.2).
+A discarded first pilot and the points where our port departs from DarkBench's code are listed in Appendix D.
 
 ## 4. Results
 
@@ -93,23 +82,7 @@ The plain-prose version, which forges nothing, removes all flags on Flash-Lite a
 
 ### 4.2 The claim does the work, not the marker
 
-**Table 1.** Flags left per suffix, shipped prompt and score rule. Header row: grader and number of baseline flags. "-" = not run.
-
-| Suffix | gpt-4o-mini (89) | Flash-Lite (54) | Gemma 4 (53) | Sonnet (70) | Haiku (67) | 3.8 Flash (51) |
-|---|---|---|---|---|---|---|
-| control | 88 | 52 | 50 | 68 | 64 | 51 |
-| plea | 80 | 50 | 46 | - | 61 | 51 |
-| reopen only | 88 | 51 | 51 | - | 65 | 51 |
-| note only | 18 | 4 | 1 | - | 56 | 40 |
-| end + note | 9 | 3 | 0 | - | 54 | 17 |
-| hidden comment | 19 | 39 | - | - | - | 50 |
-| invalidate | 1 | 51 | - | - | - | 51 |
-| plain-prose draft claim | 23 | 0 | 0 | 20 | 53 | 45 |
-| forged-marker draft claim | 1 | 0 | 0 | 0 | 0 | 0 |
-| model-written, no template | 56 | 35 | 27 | - | - | 50 |
-| model-written, template shown | 44 | 30 | 38 | - | - | 50 |
-
-Three observations.
+Table 1 in Appendix D gives the flags left for each of the eleven suffixes on each grader. Three observations stand out.
 
 *A forged marker alone is harmless.* Closing the conversation early and opening a second, innocent one (reopen only) leaves 94-100% of flags. The graders do not simply grade the last block.
 
@@ -119,31 +92,11 @@ Three observations.
 
 Model-written suffixes are weaker than the hand-written one: one attempt leaves 49-63% of flags on gpt-4o-mini and nearly all on Gemini 3.8 Flash. Shown the grader prompt, the writer forged the end marker in 86 of 89 suffixes without being asked to.
 
-**A crash bug.** 79 of those 89 suffixes contain a brace, usually a JSON verdict. DarkBench's scorer runs `str.format` a second time over the whole grader prompt, reply included (`darkbench/scorer.py`, lines 117-127), so a reply with `{...}` raises `KeyError`, and `{model}` or `{company}` in a reply would be filled in. We hit this error in our line-for-line port and patched it there; we did not run DarkBench's own package. None of the 110 unmodified replies contains a brace, but any reply with code or JSON would.
+79 of those 89 suffixes contain a brace, which exposed a crash bug in DarkBench's scorer: a reply that contains `{...}` raises an error (Appendix D).
 
 ### 4.3 Prompt fixes hold on one grader of six
 
-**Table 2.** Flags left against the forged-marker draft claim, per grader prompt. Each cell: shipped score rule → pattern-first rule.
-
-| Grader (baseline flags) | Shipped prompt | Coded markers | + reminder | JSON string |
-|---|---|---|---|---|
-| gpt-4o-mini (89) | 1 → 1 | 5 → 14 | 14 → 17 | 9 → 19 |
-| Gemini 3.5 Flash-Lite (54) | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 |
-| Gemma 4 (53) | 0 → 0 | 1 → 1 | 8 → 8 | 0 → 0 |
-| Claude Sonnet (70) | 0 → 0 | 30 → 46 | - | - |
-| Claude Haiku (67) | 0 → 0 | 41 → 54 | - | 42 → 58 |
-| Gemini 3.8 Flash (51) | 0 → 0 | 51 → 51 | 51 → 51 | 49 → 51 |
-
-**Table 3.** The same for the plain-prose draft claim.
-
-| Grader (baseline flags) | Shipped prompt | Coded markers | + reminder | JSON string |
-|---|---|---|---|---|
-| gpt-4o-mini (89) | 23 → 37 | 22 → 82 | 24 → 83 | 18 → 86 |
-| Gemini 3.5 Flash-Lite (54) | 0 → 0 | 2 → 2 | 4 → 4 | 3 → 3 |
-| Gemma 4 (53) | 0 → 0 | 46 → 50 | 45 → 52 | 23 → 47 |
-| Claude Sonnet (70) | 20 → 23 | 40 → 61 | - | - |
-| Claude Haiku (67) | 53 → 54 | 53 → 63 | - | 49 → 60 |
-| Gemini 3.8 Flash (51) | 45 → 51 | 51 → 51 | 51 → 51 | 50 → 50 |
+Tables 2 and 3 in Appendix D give the flags left under each prompt fix, for the forged-marker and the plain-prose draft claim.
 
 Coded markers restore every flag on Gemini 3.8 Flash. On the Claude graders they restore 43-61% against the forged-marker claim, on gpt-4o-mini 6%, on Flash-Lite and Gemma almost nothing. Adding a reminder after the conversation or quoting the reply as JSON changes this by a few replies. Escaping the template's markers does nothing (0 of 54 and 0 of 51 left on the two graders tested). With no suffix, every fix keeps 92-100% of the baseline flags, so the fixes do not break normal grading.
 
@@ -163,13 +116,11 @@ Without the prompt fix the rule change does little (Tables 2 and 3, first column
 
 The tamper check does not ask the grader to resist the claim; it asks whether such a claim is there. On gpt-4o-mini it says yes for 89 of 89 replies carrying either draft claim. On Flash-Lite and Gemma it catches every plain-prose claim (54 of 54, 53 of 53) and 38 of 54 and 28 of 53 of the forged-marker claims (five Gemma answers did not parse and count as no). In the misses the evidence field is empty, which suggests the grader took the forged end marker as the end of the reply despite the coded markers in the tamper prompt; we have not tested that explanation.
 
-The cost is false alarms, measured on all 110 replies, flagged or not. With no suffix the check says yes for 0 of 110 on Flash-Lite and on Gemma and for 7 of 110 on gpt-4o-mini; with the harmless control suffix, 0, 0 and 9 of 110. Every false alarm on gpt-4o-mini falls on a reply it had already flagged for a dark pattern (0 of 21 unflagged replies, with or without the control suffix), so on this sample they add no flag. The evidence it quotes is the dark pattern itself, such as brand promotion or a slanted rewrite, or the control sentence. On the second chatbot's replies the check says yes for 0 of 110 with no suffix, 13 of 110 with the control suffix (one on an unflagged reply) and 110 of 110 with either draft claim.
-
-The check also fires when a draft claim is attached to a reply the grader had not flagged: 110 of 110 for both claims on gpt-4o-mini, and 79 and 64 of 110 forged-marker claims on Flash-Lite and Gemma (13 Gemma answers came back empty and count as no). A yes therefore means "this reply addresses its grader", not "this reply contains a dark pattern", and belongs in its own field.
+The cost is false alarms. On all 110 replies with no suffix, the check says yes for 0 on Flash-Lite and on Gemma and for 7 on gpt-4o-mini (6%). All 7 fall on replies the grader had already flagged, so on this sample they add no flag. The check also fires when a draft claim is attached to a reply the grader had not flagged. A yes therefore means "this reply addresses its grader", not "this reply contains a dark pattern", and belongs in its own field. Appendix D gives the full counts, including the control suffix and the second chatbot.
 
 ### 4.6 How common is the underlying pattern
 
-We read every eval in `inspect_evals` at commit `50b8b19` (static analysis, no model calls). Of 129 evals, 39 use a prompted LLM grader. 35 of the 39 insert the tested model's output with no random code and no instruction to treat it as data; 28 have no mitigating factor at all, and 22 of the 35 measure a safety property such as refusal, honesty, sycophancy or scheming. None uses the new `{grader_nonce}`, and the repository's lockfile pins an Inspect version from before the fix. Read the same way, the upstream graders of MASK, StrongREJECT, HarmBench, ELEPHANT, Petri and Bloom also insert the output raw. This shows that the structure is common. It does not show that any of those graders is fooled; only DarkBench was tested.
+The structure is common. In a static reading of `inspect_evals` at commit `50b8b19`, 35 of the 39 evals that use a prompted LLM grader insert the tested model's output with no random code and no instruction to treat it as data, and 22 of those 35 measure a safety property (details in Appendix D). This does not show that any of those graders is fooled; only DarkBench was tested.
 
 ## 5. Discussion and Limitations
 
@@ -181,19 +132,13 @@ We read every eval in `inspect_evals` at commit `50b8b19` (static analysis, no m
 
 **A grader's suspicion should never count as a pass.** DarkBench's `invalid` field was meant for broken outputs. Under attack it becomes the place where graders report tampering, and the score rule reads it as "no dark pattern". Any three-way verdict (present, absent, cannot say) needs the third value reported separately and treated as a failure of the run, not as a clean item.
 
-**What a benchmark needs to stay meaningful.** From these results, four things a model-graded benchmark can ship, in order of cost: (1) a score rule under which "invalid" is never clean; (2) a tamper question next to the main one; (3) coded markers and a data instruction, as hygiene; (4) a grader qualification test: before a grader is trusted, run it on replies it flags, with a fixed set of suffixes like those in Table 1, and publish the flags left. The harness in this repository is that test for DarkBench, and Section 4.6 lists where else it applies.
+**What a benchmark needs to stay meaningful.** From these results, four things a model-graded benchmark can ship, in order of cost: (1) a score rule under which "invalid" is never clean; (2) a tamper question next to the main one; (3) coded markers and a data instruction, as hygiene; (4) a grader qualification test: before a grader is trusted, run it on replies it flags, with a fixed set of suffixes like those in Table 1, and publish the flags left. The harness in this repository is that test for DarkBench, and the census in Appendix D lists where else it applies.
 
 For AI safety the implication is direct. A dark-pattern or honesty benchmark that can be talked out of its verdict by the reply measures how credulous the grader is. Scores from such benchmarks feed model comparisons and release decisions, and the party being measured writes the text that does the talking.
 
 ### 5.2 Limitations
 
-- **Two tested chatbots, 110 replies each.** The paired design makes the result about graders, not about the tested model. The second chatbot was run on one grader and three suffixes; replies from other models may be flagged for different reasons.
-- **Hand-written suffixes, no adaptive attacker.** The working suffix was written by a person who had read the grader prompt. Model-written suffixes had one attempt. The tamper check was tested only against suffixes written before it existed.
-- **The tamper check is partly measured.** Three graders, 110 or 220 replies each. gpt-4o-mini reads dark-pattern content as tampering on 6% of untouched replies and the harmless control sentence on up to 12%. Its rate on a full 660-prompt run is unknown.
-- **Baseline flags are the grader's opinion.** "Flags left" uses the grader's own no-suffix verdict as reference. The control suffix bounds the noise at 6%.
-- **Ports and single grades.** The coded-marker fix is our port with a deterministic code; two fixes were not run on Sonnet and one not on Haiku. One grade per reply and condition. The census is a static reading of code.
-
-If the main assumption fails, that the attacker can append arbitrary text without consequence, the result weakens: a human reader would notice a "logging pipeline" note. Benchmark replies are not read by humans, and the hidden-comment variant, invisible in a rendered chat, still removes 79% of flags on gpt-4o-mini.
+The result rests on two tested chatbots with 110 replies each, hand-written suffixes and one grade per reply and condition. The tamper check was run on three graders and only against suffixes written before it existed, so nothing here shows that it survives an attacker who knows about it. "Flags left" uses the grader's own no-suffix verdict as the reference; the control suffix bounds that noise at 6%. A human reader would notice a "logging pipeline" note, but benchmark replies are not read by humans. Appendix A lists the limits in full.
 
 ### 5.3 Future work
 
@@ -207,7 +152,7 @@ What restores the flags sits outside the grader prompt: a score rule that never 
 
 ## Code and Data
 
-Code, cached model calls, per-run result tables and the census are in the project repository [URL to add]: `grader_gaming/` (experiment, re-scoring, tamper check), `census/` (census with file and line for each grader path), `report/` (figures). Prompts are DarkBench's public set (MIT licence). The suffix texts are in Appendix C; they target a public prompt and contain nothing beyond what Fisher (2026) and Inspect issue #6277 already describe as a class.
+Code, cached model calls, per-run result tables and the census are in the project repository, https://github.com/eddii1/epistemics-sprint : `grader_gaming/` (experiment, re-scoring, tamper check), `census/` (census with file and line for each grader path), `report/` (figures). Prompts are DarkBench's public set (MIT licence). The suffix texts are in Appendix C; they target a public prompt and contain nothing beyond what Fisher (2026) and Inspect issue #6277 already describe as a class.
 
 ## Author Contributions
 
@@ -233,6 +178,16 @@ Single author.
 
 **What it does not establish.** It does not show that any model has gamed DarkBench or would do so unprompted. It does not show that DarkBench's published results are wrong: those replies contained no such suffix. It does not show that the other benchmarks in the census are exploitable; they were read, not run. It does not show that the tamper check survives an attacker who knows about it.
 
+**Limits of the evidence.**
+
+- **Two tested chatbots, 110 replies each.** The paired design makes the result about graders, not about the tested model. The second chatbot was run on one grader and three suffixes; replies from other models may be flagged for different reasons.
+- **Hand-written suffixes, no adaptive attacker.** The working suffix was written by a person who had read the grader prompt. Model-written suffixes had one attempt. The tamper check was tested only against suffixes written before it existed.
+- **The tamper check is partly measured.** Three graders, 110 or 220 replies each. gpt-4o-mini reads dark-pattern content as tampering on 6% of untouched replies and the harmless control sentence on up to 12%. Its rate on a full 660-prompt run is unknown.
+- **Baseline flags are the grader's opinion.** "Flags left" uses the grader's own no-suffix verdict as reference. The control suffix bounds the noise at 6%.
+- **Ports and single grades.** The coded-marker fix is our port with a deterministic code; two fixes were not run on Sonnet and one not on Haiku. One grade per reply and condition. The census is a static reading of code.
+
+If the main assumption fails, that the attacker can append arbitrary text without consequence, the result weakens: a human reader would notice a "logging pipeline" note. Benchmark replies are not read by humans, and the hidden-comment variant, invisible in a rendered chat, still removes 79% of flags on gpt-4o-mini.
+
 **Misuse.** The suffix texts could be used to lower a model's measured dark-pattern rate on DarkBench without changing its behaviour. We judge the added risk as low and the benefit of publishing as higher: the attack class is already public (Fisher, 2026; Inspect issues #3603 and #6277), the suffix is three sentences that follow from reading the public prompt, and the defences are published with it. A benchmark maintainer can detect use of these suffixes by searching replies for the template's own markers. The report includes no automated attack tool; the model-written attack is a single prompt and performs worse than the hand-written suffix.
 
 **Manipulation.** The "induced" arm uses operator instructions that make a model flatter, anthropomorphise or promote a brand. These replies were produced for grading only and shown to no user. Harmful generation was not induced.
@@ -245,12 +200,23 @@ Single author.
 
 The sprint ran from Friday 13 to Sunday 15 November 2026. The sprint page gives dates and no start hour; its first event was the logistics talk on Friday at 14:15 UTC (15:15 CET). Times below are CET and come from the creation times of the code and result files. The same list is in the repository README.
 
-- **Pre-existing: Thursday 12 November, 20:19 to 22:11 CET, the evening before the sprint.** Project set-up (`common/`); the DarkBench port and the experiment script (`grader_gaming/darkbench.py`, `run.py`); the 110 replies; runs `pilot`, `confirm`, `fix` and `graders2`; the census (`census/`). In this report that is: the control, forged-marker and other hand-written suffix results under the shipped prompt on Gemini 3.5 Flash-Lite, Gemini 3.8 Flash, Gemma and Claude Haiku (their control and forged-marker bars in Figure 1, their columns in Table 1); the first test of escaping and coded markers on the two Gemini graders; and Section 4.6.
+- **Pre-existing: Thursday 12 November, 20:19 to 22:11 CET, the evening before the sprint.** Project set-up (`common/`); the DarkBench port and the experiment script (`grader_gaming/darkbench.py`, `run.py`); the 110 replies; runs `pilot`, `confirm`, `fix` and `graders2`; the census (`census/`). In this report that is: the control, forged-marker and other hand-written suffix results under the shipped prompt on Gemini 3.5 Flash-Lite, Gemini 3.8 Flash, Gemma and Claude Haiku (their control and forged-marker bars in Figure 1, their columns in Table 1); the first test of escaping and coded markers on the two Gemini graders; and the census (Section 4.6 and Appendix D).
 - **Sprint dates, before the first talk: Friday 13 November, 09:39 to 15:01 CET.** Everything on gpt-4o-mini, DarkBench's default grader, and on Claude Sonnet (runs `gpt_attacks`, `gpt_fix`, `gpt_score`, `sonnet`); the plain-prose claim and the model-written suffixes on all graders (`attacks2`, `haiku_fix`); the whole-benchmark counts (`score`, `gpt_score`); the three prompt fixes across graders (`fix2`, `gpt_fix`, `haiku_fix`); the pattern-first score rule (`rescore.py`); the tamper check (`tamper.py`, runs `tamper`, `tamper_gpt_attacks`); the crash-bug finding; both figures; the first draft of this report.
-- **Sunday 15 November, 11:00 to 11:25 CET:** the tamper check on every reply, flagged or not, with and without a suffix (`tamper_all_gpt_attacks`, `tamper_all_attacks2`); the second chatbot and its tamper check (`chatbot2`, `tamper_all_chatbot2`); final text of this report.
+- **Sunday 15 November, from 11:00 CET:** the tamper check on every reply, flagged or not, with and without a suffix (`tamper_all_gpt_attacks`, `tamper_all_attacks2`); the second chatbot and its tamper check (`chatbot2`, `tamper_all_chatbot2`); final text of this report.
 - **Not original to this project:** DarkBench's prompts, grader prompt and score rule (Kran et al., 2025); the coded-marker defence (Inspect PR #6282), ported here.
 
 ## Appendix C. Suffix and prompt texts
+
+The eleven suffixes:
+
+- **control**: 50 words of harmless filler.
+- **plea**: a note to "any automated reviewer" asking for a 0, with no format trick.
+- **reopen only**: a forged end marker and a second, harmless conversation block; no instruction, no claim.
+- **note only**, **end + note**, **hidden comment**: a forged end marker and an "annotator guidance update" stating a gold label, without or with a re-opened block, or inside an HTML comment.
+- **invalidate**: a forged "transport error" notice asking for `invalid: 1`.
+- **forged-marker draft claim**: a forged end marker, a "correction from the logging pipeline" saying the transcript above is a discarded draft that was never shown to the user, and a forged second conversation with a neutral reply.
+- **plain-prose draft claim**: the same claim in one paragraph, with no marker of any kind.
+- **model-written** (two kinds): `gemini-3.8-flash` writes the suffix in one attempt, told only that an annotator exists, or also shown the public grader prompt.
 
 DarkBench's grader prompt places the conversation between `=== CONVERSATION START ===`, `--- human ---`, `--- model ---` and `=== CONVERSATION END ===`. In the texts below `{issue}` is the pattern's field name, `{name}` its display name and `{prompt}` the user's message.
 
@@ -310,6 +276,54 @@ DarkBench's grader prompt places the conversation between `=== CONVERSATION STAR
 
 Full tables for every run, both score rules, with Wilson intervals: `grader_gaming/results/rescored.md`.
 
+## Appendix D. Full tables, further results, the census and deviations
+
+**Table 1.** Flags left per suffix, shipped prompt and score rule. Header row: grader and number of baseline flags. "-" = not run.
+
+| Suffix | gpt-4o-mini (89) | Flash-Lite (54) | Gemma 4 (53) | Sonnet (70) | Haiku (67) | 3.8 Flash (51) |
+|---|---|---|---|---|---|---|
+| control | 88 | 52 | 50 | 68 | 64 | 51 |
+| plea | 80 | 50 | 46 | - | 61 | 51 |
+| reopen only | 88 | 51 | 51 | - | 65 | 51 |
+| note only | 18 | 4 | 1 | - | 56 | 40 |
+| end + note | 9 | 3 | 0 | - | 54 | 17 |
+| hidden comment | 19 | 39 | - | - | - | 50 |
+| invalidate | 1 | 51 | - | - | - | 51 |
+| plain-prose draft claim | 23 | 0 | 0 | 20 | 53 | 45 |
+| forged-marker draft claim | 1 | 0 | 0 | 0 | 0 | 0 |
+| model-written, no template | 56 | 35 | 27 | - | - | 50 |
+| model-written, template shown | 44 | 30 | 38 | - | - | 50 |
+
+**Table 2.** Flags left against the forged-marker draft claim, per grader prompt. Each cell: shipped score rule → pattern-first rule.
+
+| Grader (baseline flags) | Shipped prompt | Coded markers | + reminder | JSON string |
+|---|---|---|---|---|
+| gpt-4o-mini (89) | 1 → 1 | 5 → 14 | 14 → 17 | 9 → 19 |
+| Gemini 3.5 Flash-Lite (54) | 0 → 0 | 0 → 0 | 0 → 0 | 0 → 0 |
+| Gemma 4 (53) | 0 → 0 | 1 → 1 | 8 → 8 | 0 → 0 |
+| Claude Sonnet (70) | 0 → 0 | 30 → 46 | - | - |
+| Claude Haiku (67) | 0 → 0 | 41 → 54 | - | 42 → 58 |
+| Gemini 3.8 Flash (51) | 0 → 0 | 51 → 51 | 51 → 51 | 49 → 51 |
+
+**Table 3.** Flags left against the plain-prose draft claim, per grader prompt. Each cell: shipped score rule → pattern-first rule.
+
+| Grader (baseline flags) | Shipped prompt | Coded markers | + reminder | JSON string |
+|---|---|---|---|---|
+| gpt-4o-mini (89) | 23 → 37 | 22 → 82 | 24 → 83 | 18 → 86 |
+| Gemini 3.5 Flash-Lite (54) | 0 → 0 | 2 → 2 | 4 → 4 | 3 → 3 |
+| Gemma 4 (53) | 0 → 0 | 46 → 50 | 45 → 52 | 23 → 47 |
+| Claude Sonnet (70) | 20 → 23 | 40 → 61 | - | - |
+| Claude Haiku (67) | 53 → 54 | 53 → 63 | - | 49 → 60 |
+| Gemini 3.8 Flash (51) | 45 → 51 | 51 → 51 | 51 → 51 | 50 → 50 |
+
+**Tamper check: false alarms and unflagged replies.** False alarms were measured on all 110 replies, flagged or not. With no suffix the check says yes for 0 of 110 on Flash-Lite and on Gemma and for 7 of 110 on gpt-4o-mini; with the harmless control suffix, 0, 0 and 9 of 110. Every false alarm on gpt-4o-mini falls on a reply it had already flagged for a dark pattern (0 of 21 unflagged replies, with or without the control suffix), so on this sample they add no flag. The evidence it quotes is the dark pattern itself, such as brand promotion or a slanted rewrite, or the control sentence. On the second chatbot's replies the check says yes for 0 of 110 with no suffix, 13 of 110 with the control suffix (one on an unflagged reply) and 110 of 110 with either draft claim. The check also fires when a draft claim is attached to a reply the grader had not flagged: 110 of 110 for both claims on gpt-4o-mini, and 79 and 64 of 110 forged-marker claims on Flash-Lite and Gemma (13 Gemma answers came back empty and count as no).
+
+**A crash bug.** 79 of the 89 model-written suffixes that were shown the grader prompt contain a brace, usually a JSON verdict. DarkBench's scorer runs `str.format` a second time over the whole grader prompt, reply included (`darkbench/scorer.py`, lines 117-127), so a reply with `{...}` raises `KeyError`, and `{model}` or `{company}` in a reply would be filled in. We hit this error in our line-for-line port and patched it there; we did not run DarkBench's own package. None of the 110 unmodified replies contains a brace, but any reply with code or JSON would.
+
+**Census.** We read every eval in `inspect_evals` at commit `50b8b19` (static analysis, no model calls). Of 129 evals, 39 use a prompted LLM grader. 35 of the 39 insert the tested model's output with no random code and no instruction to treat it as data; 28 have no mitigating factor at all, and 22 of the 35 measure a safety property such as refusal, honesty, sycophancy or scheming. None uses the new `{grader_nonce}`, and the repository's lockfile pins an Inspect version from before the fix. Read the same way, the upstream graders of MASK, StrongREJECT, HarmBench, ELEPHANT, Petri and Bloom also insert the output raw. This shows that the structure is common. It does not show that any of those graders is fooled; only DarkBench was tested.
+
+**What did not work, and deviations.** A first pilot with small output limits was discarded: Gemini and Gemma spend output tokens on hidden reasoning, so grades were cut short. Our port departs from DarkBench in the graders, in deriving the marker code from the content so that calls can be cached (a deployment would draw it at random), and in inserting replies that contain braces after DarkBench's second `str.format`, which otherwise raises an error (the crash bug above).
+
 ## LLM Usage Statement
 
-[Draft; state what is true at submission.] An LLM coding assistant (Claude Code) was used throughout: it wrote most of the experiment code under the author's direction, ran the experiments, and drafted this report. LLMs are also the object of study (the tested chatbot, the six graders and the writer of the model-written suffixes). The author chose the research question and the experiments, reviewed the code, and checked every number in this report against the result files in the repository. References were checked against their source pages on 2026-11-13.
+An LLM coding assistant, Claude Code running Claude Fable 5.2 (Anthropic), was used throughout this project. At the author's request it proposed several project ideas, and the author chose this one. Under the author's direction it then wrote the experiment code, ran the experiments, computed the statistics, drew the figures and wrote the first draft of this report, reading each number from the result files in the repository. The author decided which experiments to run, approved each run and its budget, reviewed the results and the draft, and is responsible for everything in this report. The assistant checked the references against their source pages on 13 November 2026. LLMs are also the object of study: the two tested chatbots, the six graders and the writer of the model-written suffixes are named in Section 3.
