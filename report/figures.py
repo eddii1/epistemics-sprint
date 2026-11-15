@@ -1,5 +1,8 @@
 """Figures for the report, drawn from the saved result rows. Makes no model calls.
 
+Both are drawn at the width they are printed at (6.5 in, the text width of the report template), so
+the font sizes below are the sizes on the page.
+
     uv run --with matplotlib python -m report.figures
 
 Writes report/fig1_attack.png and report/fig2_closing.png.
@@ -21,7 +24,7 @@ from grader_gaming import darkbench as db
 RESULTS = Path("grader_gaming/results")
 RUNS = ["confirm", "fix", "graders2", "attacks2", "fix2", "haiku_fix", "sonnet", "gpt_attacks", "gpt_fix"]
 GRADERS = [  # order: DarkBench's default first, then by how much of the plain-prose claim each one believes
-    ("openai/gpt-4o-mini", "gpt-4o-mini\n(DarkBench default)"),
+    ("openai/gpt-4o-mini", "gpt-4o-mini\n(default)"),
     ("gemini/gemini-3.5-flash-lite", "Gemini 3.5\nFlash-Lite"),
     ("gemini/gemma-4-26b-a4b-it", "Gemma 4\n26B"),
     ("cli:sonnet", "Claude\nSonnet"),
@@ -65,7 +68,7 @@ def style(ax) -> None:
     ax.spines["bottom"].set_color(AXIS)
     ax.yaxis.grid(True, color=GRID, linewidth=0.8)
     ax.set_axisbelow(True)
-    ax.tick_params(axis="both", length=0, labelsize=8, colors=MUTED)
+    ax.tick_params(axis="both", length=0, labelsize=8.5, colors=MUTED)
     ax.set_ylim(0, 112)
     ax.set_yticks([0, 25, 50, 75, 100])
     ax.set_yticklabels(["0%", "25%", "50%", "75%", "100%"])
@@ -79,14 +82,14 @@ def bars(ax, x: float, k: int, n: int, color: str, width: float, err: bool = Tru
         lo, hi = wilson(k, n)
         ax.plot([x, x], [100 * lo, 100 * hi], color=INK, linewidth=0.8, alpha=0.55)
         top = 100 * hi
-    ax.text(x, top + 1.5, str(k), ha="center", va="bottom", fontsize=7.5, color=INK)
+    ax.text(x, top + 1.5, str(k), ha="center", va="bottom", fontsize=8, color=INK)
 
 
 def fig1(rows: dict) -> None:
-    fig, ax = plt.subplots(figsize=(7.2, 3.3), dpi=220, facecolor=SURFACE)
+    fig, ax = plt.subplots(figsize=(6.5, 2.11), dpi=300, facecolor=SURFACE)
     style(ax)
-    conds = [("control", "harmless filler (control)"), ("draft_plain", '"discarded draft" claim, plain prose'),
-             ("replace_transcript", '"discarded draft" claim, forged markers')]
+    conds = [("control", "harmless filler (control)"), ("draft_plain", "draft claim, plain prose"),
+             ("replace_transcript", "draft claim, forged markers")]
     w = 0.26
     ticks = []
     for gi, (g, label) in enumerate(GRADERS):
@@ -97,11 +100,11 @@ def fig1(rows: dict) -> None:
             bars(ax, gi + (ci - 1) * w, k, n, SERIES[ci], w)
     ax.set_xticks(range(len(GRADERS)))
     ax.set_xticklabels(ticks, color=INK)
-    ax.set_ylabel("flags left, % of replies flagged with no suffix", fontsize=8, color=MUTED)
+    ax.set_ylabel("flags left", fontsize=8.5, color=MUTED)
     handles = [plt.Rectangle((0, 0), 1, 1, color=SERIES[i]) for i in range(3)]
-    ax.legend(handles, [c[1] for c in conds], loc="upper center", bbox_to_anchor=(0.5, 1.17), ncol=3,
-              frameon=False, fontsize=8, labelcolor=INK, handlelength=1.1, columnspacing=1.6)
-    fig.tight_layout()
+    fig.legend(handles, [c[1] for c in conds], loc="upper center", bbox_to_anchor=(0.5, 1.0), ncol=3,
+               frameon=False, fontsize=8.5, labelcolor=INK, handlelength=1.1, columnspacing=1.6)
+    fig.tight_layout(pad=0.4, rect=(0, 0, 1, 0.91))
     fig.savefig("report/fig1_attack.png", facecolor=SURFACE)
 
 
@@ -112,9 +115,8 @@ def fig2(rows: dict) -> None:
             r = json.loads(line)
             tam[(r["grader"], r["id"], r["arm"], r["payload"])] = r["tamper"] == 1
     graders = GRADERS[:3]
-    steps = ["shipped prompt and score rule", "coded markers", "coded markers + changed score rule",
-             "shipped prompt + tamper check"]
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.5), dpi=220, facecolor=SURFACE, sharey=True)
+    steps = ["shipped prompt", "coded markers", "coded markers + pattern-first rule", "shipped + tamper check"]
+    fig, axes = plt.subplots(1, 2, figsize=(6.5, 2.24), dpi=300, facecolor=SURFACE, sharey=True)
     w = 0.2
     for ax, (p, title) in zip(axes, [("replace_transcript", "(a) forged-marker draft claim"),
                                      ("draft_plain", "(b) plain-prose draft claim")]):
@@ -129,12 +131,12 @@ def fig2(rows: dict) -> None:
                 bars(ax, gi + (si - 1.5) * w, k, n, STEPS[si], w, err=False)
         ax.set_xticks(range(len(graders)))
         ax.set_xticklabels([f"{lab}\nn = {len(base_items(rows, g))}" for g, lab in graders], color=INK)
-        ax.set_title(title, fontsize=8.5, color=INK, loc="left", pad=6)
-    axes[0].set_ylabel("flags left, % of replies flagged with no suffix", fontsize=8, color=MUTED)
+        ax.set_title(title, fontsize=8.5, color=INK, loc="left", pad=4)
+    axes[0].set_ylabel("flags left", fontsize=8.5, color=MUTED)
     handles = [plt.Rectangle((0, 0), 1, 1, color=c) for c in STEPS]
-    fig.legend(handles, steps, loc="upper center", ncol=2, frameon=False, fontsize=8, labelcolor=INK,
-               handlelength=1.1, columnspacing=2.0, bbox_to_anchor=(0.5, 1.0))
-    fig.tight_layout(rect=(0, 0, 1, 0.88))
+    fig.legend(handles, steps, loc="upper center", ncol=4, frameon=False, fontsize=8, labelcolor=INK,
+               handlelength=1.1, columnspacing=1.2, handletextpad=0.5, bbox_to_anchor=(0.5, 1.0))
+    fig.tight_layout(pad=0.4, rect=(0, 0, 1, 0.91))
     fig.savefig("report/fig2_closing.png", facecolor=SURFACE)
 
 
