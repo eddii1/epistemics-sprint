@@ -1,0 +1,8 @@
+.venv/
+.cache/
+# the call cache of the report's experiments is kept, so that reruns make no model calls
+!grader_gaming/.cache/
+.ruff_cache/
+__pycache__/
+.env
+*.pyc
