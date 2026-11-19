@@ -6,3 +6,8 @@
 __pycache__/
 .env
 *.pyc
+# MASK carries a canary string and must not be republished: data and raw rows stay local
+transfer/data/
+transfer/results/*/rows.jsonl
+.venv-inspect/
+transfer/inspect_logs/
